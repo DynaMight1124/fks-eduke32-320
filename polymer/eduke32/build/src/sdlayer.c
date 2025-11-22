@@ -871,7 +871,7 @@ int32_t checkvideomode(int32_t *x, int32_t *y, int32_t c, int32_t fs, int32_t fo
 	
 #else
     if (*x < 320) *x = 320;
-    if (*y < 200) *y = 200;
+    if (*y < 240) *y = 240;
     if (*x > MAXXDIM) *x = MAXXDIM;
     if (*y > MAXYDIM) *y = MAXYDIM;
 //    *x &= 0xfffffff8l;
@@ -923,7 +923,7 @@ void calculatescreenextents()
 
 	if (screenscalemode == SCREENSCALE_CROPPED)
 	{
-		int croppedArea = 120 - xres / 2;
+		int croppedArea = 160 - xres / 2;
 
 		if (croppedArea < 0)
 		{
@@ -972,7 +972,7 @@ int32_t setvideomode(int32_t x, int32_t y, int32_t c, int32_t fs)
     {
         initprintf("Setting video mode %dx%d (%d-bpp %s)\n",
                    x,y,c, ((fs&1) ? "fullscreen" : "windowed"));
-        sdl_surface = SDL_SetVideoMode(240, 240, 8, SDL_HWSURFACE | SDL_HWPALETTE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
+        sdl_surface = SDL_SetVideoMode(320, 240, 8, SDL_HWSURFACE | SDL_HWPALETTE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
         if (!sdl_surface)
         {
             initprintf("Unable to set video mode!\n");
@@ -1389,7 +1389,7 @@ void showframe(int32_t w)
 
 		if (screenscalemode == SCREENSCALE_CROPPED)
 		{
-			int srcPosX = 120 - xres / 2;
+			int srcPosX = 160 - xres / 2;
 			int srcPosY = 120 - yres / 2;
 
 			SDL_Rect srcRect;
@@ -1401,7 +1401,7 @@ void showframe(int32_t w)
 			SDL_Rect dstRect;
 			dstRect.x = srcPosX > 0 ? srcPosX : 0;
 			dstRect.y = srcPosY > 0 ? srcPosY : 0;
-			dstRect.w = min(xres, 240);
+			dstRect.w = min(xres, 320);
 			dstRect.h = min(yres, 240);
 
 			// Blit the offscreen buffer
@@ -1421,7 +1421,7 @@ void showframe(int32_t w)
 			SDL_Rect dstRect;
 			dstRect.x = 0;
 			dstRect.y = 0;
-			dstRect.w = 240;
+			dstRect.w = 320;
 			dstRect.h = 240;
 
 			blitstretched(sdl_offscreen_surface, &srcRect, sdl_surface, &dstRect);
@@ -1437,7 +1437,7 @@ void showframe(int32_t w)
 			SDL_Rect dstRect;
 			dstRect.x = 0;
 			dstRect.y = 0;
-			dstRect.w = 240;
+			dstRect.w = 320;
 			dstRect.h = 240;
 
 			float srcAspect = (float)yres / (float)xres;
@@ -1445,7 +1445,7 @@ void showframe(int32_t w)
 			if (srcAspect > 1.0f)
 			{
 				dstRect.w = (int)((float)dstRect.h / srcAspect);
-				dstRect.x = 120 - dstRect.w / 2;
+				dstRect.x = 160 - dstRect.w / 2;
 			}
 			else if (srcAspect < 1.0f)
 			{
