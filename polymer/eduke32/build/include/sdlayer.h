@@ -13,14 +13,6 @@ struct sdlappicon {
 	uint8_t *mask;
 };
 
-enum ScreenScaleMode_t
-{
-	SCREENSCALE_CROPPED = 0,
-	SCREENSCALE_SCALED = 1,
-	SCREENSCALE_STRETCHED = 2,
-	SCREENSCALE_MAX
-};
-
 #else
 #if (__build_interface_layer__ != SDL)
 #error "Already using the " __build_interface_layer__ ". Can't now use SDL."

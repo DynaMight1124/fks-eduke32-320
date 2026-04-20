@@ -59,10 +59,6 @@ static char *mousebuttonnames[] = { "Mouse1", "Mouse2", "Mouse3", "Mouse4", "Whe
 extern int32_t voting;
 extern int32_t enableFramerateLimiter;
 
-extern enum ScreenScaleMode_t screenscalemode;
-extern int32_t screencropoffset;
-void calculatescreenextents();
-
 #define USERMAPENTRYLENGTH 25
 
 #define mgametext(x,y,t,s,dabits) G_PrintGameText(2,STARTALPHANUM, x,y,t,s,0,dabits,0, 0, xdim-1, ydim-1, 65536)
@@ -1922,7 +1918,7 @@ cheat_for_port_credits:
         c = (320>>1);
         rotatesprite(c<<16,28<<16,65536L,0,INGAMEDUKETHREEDEE,0,0,10,0,0,xdim-1,ydim-1);
         if (PLUTOPAK)   // JBF 20030804
-            rotatesprite((c+100-(screencropoffset*7/10))<<16,36-(screencropoffset/8)<<16,65536L,0,PLUTOPAKSPRITE+2,(sintable[(totalclock<<4)&2047]>>11),0,2+8,0,0,xdim-1,ydim-1);
+            rotatesprite((c+100-(0*7/10))<<16,36-(0/8)<<16,65536L,0,PLUTOPAKSPRITE+2,(sintable[(totalclock<<4)&2047]>>11),0,2+8,0,0,xdim-1,ydim-1);
         x = M_Probe(c,67,16,6);
         if (x >= 0)
         {
@@ -2001,7 +1997,7 @@ cheat_for_port_credits:
         c = (320>>1);
         rotatesprite(c<<16,32<<16,65536L,0,INGAMEDUKETHREEDEE,0,0,10,0,0,xdim-1,ydim-1);
         if (PLUTOPAK)   // JBF 20030804
-            rotatesprite((c+100-(screencropoffset*7/10))<<16,36-(screencropoffset/8)<<16,65536L,0,PLUTOPAKSPRITE+2,(sintable[(totalclock<<4)&2047]>>11),0,2+8,0,0,xdim-1,ydim-1);
+            rotatesprite((c+100-(0*7/10))<<16,36-(0/8)<<16,65536L,0,PLUTOPAKSPRITE+2,(sintable[(totalclock<<4)&2047]>>11),0,2+8,0,0,xdim-1,ydim-1);
         x = M_Probe(c,67,16,7);
         switch (x)
         {
@@ -3131,22 +3127,10 @@ cheat_for_port_credits:
 
         c = (320>>1)-120;
 
-#if defined(POLYMOST) && defined(USE_OPENGL)
-        x = (5/*+(getrendermode() >= 3)*/);
-#else
-        x = 5;
-#endif
-        onbar = (!getrendermode() && probey == 4); // (probey == 4);
-        if (probey == 0 || probey == 1)
-            x = M_Probe(c,50,16,x);
-        else
-            x = M_Probe(c,50+62-16-16-16,16,x);
-
-        if ((probey == 0 || probey == 1) && (KB_KeyPressed(sc_LeftArrow) || KB_KeyPressed(sc_RightArrow)))
-        {
-            S_PlaySound(PISTOL_BODYHIT);
-            x=probey;
-        }
+        x = 4; // Total items
+        onbar = (!getrendermode() && (probey == 0 || probey == 2 || probey == 3));
+        
+        x = M_Probe(c, 50, 16, 4);
 
         switch (x)
         {
@@ -3155,360 +3139,73 @@ cheat_for_port_credits:
             probey = 2;
             break;
 
-		case 0:
-			{
-				enum ScreenScaleMode_t newscalemode = screenscalemode;
-
-				if (KB_KeyPressed(sc_LeftArrow))
-				{
-					if (newscalemode > 0)
-					{
-						newscalemode--;
-					}
-					else
-					{
-						newscalemode = SCREENSCALE_MAX - 1;
-					}
-				}
-				else if (KB_KeyPressed(sc_RightArrow))
-				{
-					if (newscalemode < SCREENSCALE_MAX - 1)
-					{
-						newscalemode++;
-					}
-					else
-					{
-						newscalemode = 0;
-					}
-				}
-
-				if (newscalemode != screenscalemode)
-				{
-					screenscalemode = newscalemode;
-					ud.config.ScreenScaleMode = screenscalemode;
-					calculatescreenextents();
-				}
-
-				KB_ClearKeyDown(sc_LeftArrow);
-				KB_ClearKeyDown(sc_RightArrow);
-			}
+		case 0: // FPS Limiter
+			enableFramerateLimiter = !enableFramerateLimiter;
+			S_PlaySound(KICK_HIT);
+			KB_ClearKeyDown(sc_LeftArrow);
+			KB_ClearKeyDown(sc_RightArrow);
 			break;
 
-		case 1:
-			{
-				if (KB_KeyPressed(sc_LeftArrow) || KB_KeyPressed(sc_RightArrow))
-				{
-					KB_ClearKeyDown(sc_LeftArrow);
-					KB_ClearKeyDown(sc_RightArrow);
-
-					enableFramerateLimiter = !enableFramerateLimiter;
-					S_PlaySound(KICK_HIT);
-				}
-			}
-			break;
-
-/*
-        case 0:
-            do
-            {
-                if (KB_KeyPressed(sc_LeftArrow))
-                {
-                    newvidmode--;
-                    if (newvidmode < 0) newvidmode = validmodecnt-1;
-                }
-                else
-                {
-                    newvidmode++;
-                    if (newvidmode >= validmodecnt) newvidmode = 0;
-                }
-            }
-            while ((validmode[newvidmode].fs&1) != ((vidsets[newvidset]>>16)&1) || validmode[newvidmode].bpp != (vidsets[newvidset] & 0x0ffff));
-            //OSD_Printf("New mode is %dx%dx%d-%d %d\n",validmode[newvidmode].xdim,validmode[newvidmode].ydim,validmode[newvidmode].bpp,validmode[newvidmode].fs,newvidmode);
-            if ((curvidmode == 0x7fffffffl && newvidmode == validmodecnt) || curvidmode == newvidmode)
-                changesmade &= ~1;
-            else
-                changesmade |= 1;
-            KB_ClearKeyDown(sc_LeftArrow);
-            KB_ClearKeyDown(sc_RightArrow);
-            break;
-
-        case 1:
-        {
-            int32_t lastvidset, lastvidmode, safevidmode = -1;
-            lastvidset = newvidset;
-            lastvidmode = newvidmode;
-            // find the next vidset compatible with the current fullscreen setting
-            while (vidsets[0] != -1)
-            {
-                newvidset++;
-                if (newvidset == sizeof(vidsets)/sizeof(vidsets[0]) || vidsets[newvidset] == -1)
-                {
-                    newvidset = -1;
-                    continue;
-                }
-                if (((vidsets[newvidset]>>16)&1) != newfullscreen) continue;
-                break;
-            }
-
-            if ((vidsets[newvidset] & 0x0ffff) != (vidsets[lastvidset] & 0x0ffff))
-            {
-                // adjust the video mode to something legal for the new vidset
-                do
-                {
-                    newvidmode++;
-                    if (newvidmode == lastvidmode) break;   // end of cycle
-                    if (newvidmode >= validmodecnt)
-                    {
-                        if (safevidmode != -1)
-                            break;
-                        newvidmode = 0;
-                    }
-                    if (validmode[newvidmode].bpp == (vidsets[newvidset]&0x0ffff) &&
-                            validmode[newvidmode].fs == newfullscreen &&
-                            validmode[newvidmode].xdim <= validmode[lastvidmode].xdim &&
-                            (safevidmode==-1?1:(validmode[newvidmode].xdim>=validmode[safevidmode].xdim)) &&
-                            validmode[newvidmode].ydim <= validmode[lastvidmode].ydim &&
-                            (safevidmode==-1?1:(validmode[newvidmode].ydim>=validmode[safevidmode].ydim))
-                       )
-                        safevidmode = newvidmode;
-                }
-                while (1);
-                if (safevidmode == -1)
-                {
-                    //OSD_Printf("No best fit!\n");
-                    newvidmode = lastvidmode;
-                    newvidset = lastvidset;
-                }
-                else
-                {
-                    //OSD_Printf("Best fit is %dx%dx%d-%d %d\n",validmode[safevidmode].xdim,validmode[safevidmode].ydim,validmode[safevidmode].bpp,validmode[safevidmode].fs,safevidmode);
-                    newvidmode = safevidmode;
-                }
-            }
-            if (newvidset != curvidset) changesmade |= 4;
-            else changesmade &= ~4;
-            if (newvidmode != curvidmode) changesmade |= 1;
-            else changesmade &= ~1;
-            KB_ClearKeyDown(sc_LeftArrow);
-            KB_ClearKeyDown(sc_RightArrow);
-        }
-        break;
-
-        case 2:
-            newfullscreen = !newfullscreen;
-            {
-                int32_t lastvidset, lastvidmode, safevidmode = -1, safevidset = -1;
-                lastvidset = newvidset;
-                lastvidmode = newvidmode;
-                // find the next vidset compatible with the current fullscreen setting
-                while (vidsets[0] != -1)
-                {
-                    newvidset++;
-                    if (newvidset == lastvidset) break;
-                    if (newvidset == sizeof(vidsets)/sizeof(vidsets[0]) || vidsets[newvidset] == -1)
-                    {
-                        newvidset = -1;
-                        continue;
-                    }
-                    if (((vidsets[newvidset]>>16)&1) != newfullscreen) continue;
-                    if ((vidsets[newvidset] & 0x2ffff) != (vidsets[lastvidset] & 0x2ffff))
-                    {
-                        if ((vidsets[newvidset] & 0x20000) == (vidsets[lastvidset] & 0x20000)) safevidset = newvidset;
-                        continue;
-                    }
-                    break;
-                }
-                if (newvidset == lastvidset)
-                {
-                    if (safevidset == -1)
-                    {
-                        newfullscreen = !newfullscreen;
-                        break;
-                    }
-                    else
-                    {
-                        newvidset = safevidset;
-                    }
-                }
-
-                // adjust the video mode to something legal for the new vidset
-                do
-                {
-                    newvidmode++;
-                    if (newvidmode == lastvidmode) break;   // end of cycle
-                    if (newvidmode >= validmodecnt) newvidmode = 0;
-                    if (validmode[newvidmode].bpp == (vidsets[newvidset]&0x0ffff) &&
-                            validmode[newvidmode].fs == newfullscreen &&
-                            validmode[newvidmode].xdim <= validmode[lastvidmode].xdim &&
-                            (safevidmode==-1?1:(validmode[newvidmode].xdim>=validmode[safevidmode].xdim)) &&
-                            validmode[newvidmode].ydim <= validmode[lastvidmode].ydim &&
-                            (safevidmode==-1?1:(validmode[newvidmode].ydim>=validmode[safevidmode].ydim))
-                       )
-                        safevidmode = newvidmode;
-                }
-                while (1);
-                if (safevidmode == -1)
-                {
-                    //OSD_Printf("No best fit!\n");
-                    newvidmode = lastvidmode;
-                    newvidset = lastvidset;
-                    newfullscreen = !newfullscreen;
-                }
-                else
-                {
-                    //OSD_Printf("Best fit is %dx%dx%d-%d %d\n",validmode[safevidmode].xdim,validmode[safevidmode].ydo,,validmode[safevidmode].bpp,validmode[safevidmode].fs,safevidmode);
-                    newvidmode = safevidmode;
-                }
-                if (newvidset != curvidset) changesmade |= 4;
-                else changesmade &= ~4;
-                if (newvidmode != curvidmode) changesmade |= 1;
-                else changesmade &= ~1;
-            }
-            if (newfullscreen == fullscreen) changesmade &= ~2;
-            else changesmade |= 2;
-            KB_ClearKeyDown(sc_LeftArrow);
-            KB_ClearKeyDown(sc_RightArrow);
-            break;
-
-        case 3:
-            if (!changesmade) break;
-            {
-                int32_t pxdim, pydim, pfs, pbpp, prend;
-                int32_t nxdim, nydim, nfs, nbpp, nrend;
-
-                pxdim = xdim;
-                pydim = ydim;
-                pbpp = bpp;
-                pfs = fullscreen;
-                prend = getrendermode();
-                nxdim = (newvidmode==validmodecnt)?xdim:validmode[newvidmode].xdim;
-                nydim = (newvidmode==validmodecnt)?ydim:validmode[newvidmode].ydim;
-                nfs   = newfullscreen;
-                nbpp  = (newvidmode==validmodecnt)?bpp:validmode[newvidmode].bpp;
-                nrend = (vidsets[newvidset] & 0x20000) ? (nbpp==8?2:
-#if defined(POLYMOST) && defined(USE_OPENGL)
-                        glrendmode
-#else
-                        0
-#endif
-
-                                                         ) : 0;
-
-                if (setgamemode(nfs, nxdim, nydim, nbpp) < 0)
-                {
-                    if (setgamemode(pfs, pxdim, pydim, pbpp) < 0)
-                    {
-                        setrendermode(prend);
-                        G_GameExit("Failed restoring old video mode.");
-                    }
-                    else onvideomodechange(pbpp > 8);
-                }
-                else onvideomodechange(nbpp > 8);
-
-                g_restorePalette = 1;
-                G_UpdateScreenArea();
-                setrendermode(nrend);
-
-                curvidmode = newvidmode;
-                curvidset = newvidset;
-                changesmade = 0;
-
-                ud.config.ScreenMode = fullscreen;
-                ud.config.ScreenWidth = xdim;
-                ud.config.ScreenHeight = ydim;
-                ud.config.ScreenBPP = bpp;
-            }
-            break;
-*/
-
-        case 2:
+        case 1: // Color Correction
             ChangeToMenu(231);
             break;
 
-        case 3:
+        case 2: // Pixel Doubling (Software) or Texture Filter (OpenGL)
             if (!getrendermode())
             {
-                ud.detail = 1-ud.detail;
-                break;
+                ud.detail = 1 - ud.detail;
+                S_PlaySound(PISTOL_BODYHIT);
             }
 #if defined(POLYMOST) && defined(USE_OPENGL)
-            /*            switch (gltexfiltermode)
-                        {
-                        case 0:
-                            gltexfiltermode = 3;
-                            break;
-                        case 3:
-                            gltexfiltermode = 5;
-                            break;
-                        case 5:
-                            gltexfiltermode = 0;
-                            break;
-                        default:
-                            gltexfiltermode = 3;
-                            break;
-                        }*/
-            gltexfiltermode++;
-            if (gltexfiltermode > 5)
-                gltexfiltermode = 0;
-            gltexapplyprops();
-            break;
-        case 4:
-            if (!getrendermode()) break;
-            ChangeToMenu(230);
-            break;
+            else
+            {
+                if (KB_KeyPressed(sc_LeftArrow))
+                {
+                    gltexfiltermode--;
+                    if (gltexfiltermode < 0) gltexfiltermode = 5;
+                    gltexapplyprops();
+                }
+                else if (KB_KeyPressed(sc_RightArrow) || KB_KeyPressed(sc_Enter) || KB_KeyPressed(sc_kpad_Enter))
+                {
+                    gltexfiltermode++;
+                    if (gltexfiltermode > 5) gltexfiltermode = 0;
+                    gltexapplyprops();
+                }
+            }
 #endif
+            KB_ClearKeyDown(sc_LeftArrow);
+            KB_ClearKeyDown(sc_RightArrow);
+            break;
+
+        case 3: // Ambient Light (Software) or Renderer Setup (OpenGL)
+            if (getrendermode())
+            {
+#if defined(POLYMOST) && defined(USE_OPENGL)
+                ChangeToMenu(230);
+                S_PlaySound(PISTOL_BODYHIT);
+#endif
+            }
+            break;
         }
 
-		menutext(c, 50, MENUHIGHLIGHT(0), 0, "SCREEN SCALE");
-		char* sscaletext = screenscalemode == SCREENSCALE_CROPPED ? "Cropped" :
-			               screenscalemode == SCREENSCALE_SCALED ? "Scaled" :
-			               screenscalemode == SCREENSCALE_STRETCHED ? "Stretched" :
-			               "INVALID";
-		mgametext(c+168, 50-8, sscaletext, MENUHIGHLIGHT(0), 2+8+16);
-
-		menutext(c, 50+16, MENUHIGHLIGHT(1), 0, "FPS LIMITER");
+		menutext(c, 50, MENUHIGHLIGHT(0), 0, "FPS LIMITER");
 		char* frameratetext = enableFramerateLimiter ? "ON" : "OFF";
-		mgametext(c + 168, 50 + 16 - 8, frameratetext, MENUHIGHLIGHT(1), 2 + 8 + 16);
+		mgametext(c + 168, 50 - 8, frameratetext, MENUHIGHLIGHT(0), 2 + 8 + 16);
 
-/*
-        menutext(c,50,MENUHIGHLIGHT(0),0,"RESOLUTION");
-        Bsprintf(tempbuf,"%d x %d",
-                 (newvidmode==validmodecnt)?xdim:validmode[newvidmode].xdim,
-                 (newvidmode==validmodecnt)?ydim:validmode[newvidmode].ydim);
-        mgametext(c+168,50-8,tempbuf,MENUHIGHLIGHT(0),2+8+16);
+        menutext(c, 50+16, MENUHIGHLIGHT(1), 0, "COLOR CORRECTION");
 
-        menutext(c,50+16,MENUHIGHLIGHT(1),0,"RENDERER");
-        Bsprintf(tempbuf,(vidsets[newvidset]&0x20000)?"%d-bit OpenGL":"Software", vidsets[newvidset]&0x0ffff);
-        mgametext(c+168,50+16-8,tempbuf,MENUHIGHLIGHT(1),2+8+16);
-
-        menutext(c,50+16+16,MENUHIGHLIGHT(2),0,"FULLSCREEN");
-        menutext(c+168,50+16+16,MENUHIGHLIGHT(2),0,newfullscreen?"YES":"NO");
-
-        menutext(c+16,50+16+16+22,MENUHIGHLIGHT(3),changesmade==0,"APPLY CHANGES");
-*/
-
-        menutext(c,50+16+16+16,MENUHIGHLIGHT(2),PHX(-6),"COLOR CORRECTION");
-        /*        {
-                    short ss = ud.brightness;
-                    bar(c+171,50+62+16,&ss,8,x==4,MENUHIGHLIGHT(4),PHX(-6));
-                    if (x==4)
-                    {
-                        ud.brightness = ss;
-                        setbrightness(ud.brightness>>2,&g_player[myconnectindex].ps->palette[0],0);
-                    }
-                }
-        */
         if (!getrendermode())
         {
             int32_t i = (int32_t)(r_ambientlight*1024.f);
             int32_t j = i;
-            menutext(c,50+16+16+16+16,MENUHIGHLIGHT(3),0,"PIXEL DOUBLING");
-            menutext(c+168,50+16+16+16+16,MENUHIGHLIGHT(3),0,ud.detail?"OFF":"ON");
-            modval(0,1,(int32_t *)&ud.detail,1,probey==3);
-            menutext(c,50+16+16+16+16+16,MENUHIGHLIGHT(4),PHX(-6),"AMBIENT LIGHT");
-            _bar(0,c+175,50+16+16+16+16+16,&i,128,x==4,MENUHIGHLIGHT(4),g_netServer || numplayers>1,128,4096);
-            Bsprintf(tempbuf,"%.2f",r_ambientlight);
-            mgametextpal(c+175+9,50+16+16+16+16+16+4, tempbuf, MENUHIGHLIGHT(4), 0);
+            menutext(c, 50+32, MENUHIGHLIGHT(2), 0, "PIXEL DOUBLING");
+            menutext(c+168, 50+32, MENUHIGHLIGHT(2), 0, ud.detail ? "OFF" : "ON");
+            modval(0, 1, (int32_t *)&ud.detail, 1, probey == 2);
+
+            menutext(c, 50+48, MENUHIGHLIGHT(3), 0, "AMBIENT LIGHT");
+            _bar(0, c+175, 50+48, &i, 128, probey == 3, MENUHIGHLIGHT(3), g_netServer || numplayers > 1, 128, 4096);
+            Bsprintf(tempbuf, "%.2f", r_ambientlight);
+            mgametextpal(c+175+9, 50+48+4, tempbuf, MENUHIGHLIGHT(3), 0);
 
             if (i != j)
             {
@@ -3520,7 +3217,7 @@ cheat_for_port_credits:
         else
         {
             int32_t filter = gltexfiltermode;
-            menutext(c,50+62+16+16,MENUHIGHLIGHT(2),0,"TEXTURE FILTER");
+            menutext(c, 50+32, MENUHIGHLIGHT(2), 0, "TEXTURE FILTER");
             switch (gltexfiltermode)
             {
             case 0:
@@ -3545,11 +3242,11 @@ cheat_for_port_credits:
                 strcpy(tempbuf,"OTHER");
                 break;
             }
-            modval(0,5,(int32_t *)&gltexfiltermode,1,probey==2);
+            modval(0, 5, (int32_t *)&gltexfiltermode, 1, probey == 2);
             if (gltexfiltermode != filter)
                 gltexapplyprops();
-            mgametextpal(c+168,50+62+16+16-8,tempbuf,MENUHIGHLIGHT(2),!getrendermode());
-            menutext(c,50+62+16+16+16,MENUHIGHLIGHT(3),bpp==8,"RENDERER SETUP");
+            mgametextpal(c+168, 50+32-8, tempbuf, MENUHIGHLIGHT(2), !getrendermode());
+            menutext(c, 50+48, MENUHIGHLIGHT(3), bpp == 8, "RENDERER SETUP");
         }
 #endif
         break;

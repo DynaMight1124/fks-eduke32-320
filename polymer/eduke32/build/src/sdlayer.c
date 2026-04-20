@@ -65,7 +65,6 @@ int32_t wantspoweroff = 0;
 
 // video
 static SDL_Surface *sdl_surface;
-static SDL_Surface *sdl_offscreen_surface = 0;
 int32_t xres=-1, yres=-1, bpp=0, fullscreen=0, bytesperline, imageSize;
 intptr_t frameplace=0;
 int32_t lockcount=0;
@@ -73,8 +72,6 @@ char modechange=1;
 char offscreenrendering=0;
 char videomodereset = 0;
 char nofog=0;
-enum ScreenScaleMode_t screenscalemode;
-int32_t screencropoffset = 0;
 static uint16_t sysgamma[3][256];
 extern int32_t curbrightness, gammabrightness;
 #ifdef USE_OPENGL
@@ -871,7 +868,7 @@ int32_t checkvideomode(int32_t *x, int32_t *y, int32_t c, int32_t fs, int32_t fo
 	
 #else
     if (*x < 320) *x = 320;
-    if (*y < 200) *y = 200;
+    if (*y < 240) *y = 240;
     if (*x > MAXXDIM) *x = MAXXDIM;
     if (*y > MAXYDIM) *y = MAXYDIM;
 //    *x &= 0xfffffff8l;
@@ -914,25 +911,6 @@ int32_t checkvideomode(int32_t *x, int32_t *y, int32_t c, int32_t fs, int32_t fo
 }
 
 //
-// calculatescreenextents() -- work out the offset for the left and right sides of the screen
-//
-
-void calculatescreenextents()
-{
-	screencropoffset = 0;
-
-	if (screenscalemode == SCREENSCALE_CROPPED)
-	{
-		int croppedArea = 120 - xres / 2;
-
-		if (croppedArea < 0)
-		{
-			screencropoffset = -croppedArea;
-		}
-	}
-}
-
-//
 // setvideomode() -- set SDL video mode
 //
 int32_t setvideomode(int32_t x, int32_t y, int32_t c, int32_t fs)
@@ -972,18 +950,12 @@ int32_t setvideomode(int32_t x, int32_t y, int32_t c, int32_t fs)
     {
         initprintf("Setting video mode %dx%d (%d-bpp %s)\n",
                    x,y,c, ((fs&1) ? "fullscreen" : "windowed"));
-        sdl_surface = SDL_SetVideoMode(240, 240, 8, SDL_HWSURFACE | SDL_HWPALETTE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
+        sdl_surface = SDL_SetVideoMode(320, 240, 8, SDL_HWSURFACE | SDL_HWPALETTE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
         if (!sdl_surface)
         {
             initprintf("Unable to set video mode!\n");
             return -1;
         }
-
-		sdl_offscreen_surface = SDL_CreateRGBSurface(SDL_HWSURFACE, x, y, 8, 0, 0, 0, 0);
-		if (!sdl_offscreen_surface)
-		{
-			initprintf("Couldn't create offscreen surface! Image may appear stretched\n");
-		}
 	}
 
 #if 0
@@ -1181,7 +1153,6 @@ int32_t setvideomode(int32_t x, int32_t y, int32_t c, int32_t fs)
     modechange=1;
     videomodereset = 0;
     OSD_ResizeDisplay(xres,yres);
-	calculatescreenextents();
 
     // save the current system gamma to determine if gamma is available
     if (!gammabrightness)
@@ -1222,7 +1193,7 @@ void resetvideomode(void)
 //
 SDL_Surface* getrendersurface()
 {
-	return sdl_offscreen_surface ? sdl_offscreen_surface : sdl_surface;
+	return sdl_surface;
 }
 
 //
@@ -1292,43 +1263,6 @@ void enddrawing(void)
 }
 
 //
-// blitstretched() -- transfer graphics from one surface to another, while applying nearest-neighbor scaling
-//
-void blitstretched(SDL_Surface* srcSurface, SDL_Rect* srcRect, SDL_Surface* dstSurface, SDL_Rect* dstRect)
-{
-	float factorX = (float)srcRect->w / (float)dstRect->w;
-	float factorY = (float)srcRect->h / (float)dstRect->h;
-
-	if (SDL_MUSTLOCK(srcSurface)) SDL_LockSurface(srcSurface);
-	if (SDL_MUSTLOCK(dstSurface)) SDL_LockSurface(dstSurface);
-
-	intptr_t srcPixels = (intptr_t)srcSurface->pixels;
-	intptr_t dstPixels = (intptr_t)dstSurface->pixels;
-
-	for (int y = 0; y < dstRect->h; y++)
-	{
-		for (int x = 0; x < dstRect->w; x++)
-		{
-			int sx = srcRect->x + (int)(x * factorX);
-			int sy = srcRect->y + (int)(y * factorY);
-			int dx = dstRect->x + x;
-			int dy = dstRect->y + y;
-
-			if (sx >= 0 && sx < srcSurface->w &&
-				sy >= 0 && sy < srcSurface->h &&
-				dx >= 0 && dx < dstSurface->w &&
-				dy >= 0 && dy < dstSurface->h)
-			{
-				drawpixel(dstPixels + ((dy * dstSurface->pitch) + dx), *(char*)(srcPixels + ((sy * srcSurface->pitch) + sx)));
-			}
-		}
-	}
-
-	if (SDL_MUSTLOCK(srcSurface)) SDL_UnlockSurface(srcSurface);
-	if (SDL_MUSTLOCK(dstSurface)) SDL_UnlockSurface(dstSurface);
-}
-
-//
 // showframe() -- update the display
 //
 void showframe(int32_t w)
@@ -1380,82 +1314,6 @@ void showframe(int32_t w)
         printf("Frame still locked %d times when showframe() called.\n", lockcount);
         while (lockcount) enddrawing();
     }
-
-	if (sdl_offscreen_surface)
-	{
-		// Clear the screen
-		Uint32 clearColor = SDL_MapRGB(sdl_surface->format, 0, 0, 0);
-		SDL_FillRect(sdl_surface, 0, clearColor);
-
-		if (screenscalemode == SCREENSCALE_CROPPED)
-		{
-			int srcPosX = 120 - xres / 2;
-			int srcPosY = 120 - yres / 2;
-
-			SDL_Rect srcRect;
-			srcRect.x = srcPosX < 0 ? -srcPosX : 0;
-			srcRect.y = srcPosY < 0 ? -srcPosY : 0;
-			srcRect.w = xres - srcRect.x;
-			srcRect.h = yres - srcRect.y;
-
-			SDL_Rect dstRect;
-			dstRect.x = srcPosX > 0 ? srcPosX : 0;
-			dstRect.y = srcPosY > 0 ? srcPosY : 0;
-			dstRect.w = min(xres, 240);
-			dstRect.h = min(yres, 240);
-
-			// Blit the offscreen buffer
-			if (SDL_BlitSurface(sdl_offscreen_surface, &srcRect, sdl_surface, &dstRect))
-			{
-				initprintf("BLIT ERROR: %s", SDL_GetError());
-			}
-		}
-		else if (screenscalemode == SCREENSCALE_STRETCHED)
-		{
-			SDL_Rect srcRect;
-			srcRect.x = 0;
-			srcRect.y = 0;
-			srcRect.w = xres;
-			srcRect.h = yres;
-
-			SDL_Rect dstRect;
-			dstRect.x = 0;
-			dstRect.y = 0;
-			dstRect.w = 240;
-			dstRect.h = 240;
-
-			blitstretched(sdl_offscreen_surface, &srcRect, sdl_surface, &dstRect);
-		}
-		else if (screenscalemode == SCREENSCALE_SCALED)
-		{
-			SDL_Rect srcRect;
-			srcRect.x = 0;
-			srcRect.y = 0;
-			srcRect.w = xres;
-			srcRect.h = yres;
-
-			SDL_Rect dstRect;
-			dstRect.x = 0;
-			dstRect.y = 0;
-			dstRect.w = 240;
-			dstRect.h = 240;
-
-			float srcAspect = (float)yres / (float)xres;
-
-			if (srcAspect > 1.0f)
-			{
-				dstRect.w = (int)((float)dstRect.h / srcAspect);
-				dstRect.x = 120 - dstRect.w / 2;
-			}
-			else if (srcAspect < 1.0f)
-			{
-				dstRect.h = (int)((float)dstRect.w * srcAspect);
-				dstRect.y = 120 - dstRect.h / 2;
-			}
-
-			blitstretched(sdl_offscreen_surface, &srcRect, sdl_surface, &dstRect);
-		}
-	}
 
     SDL_Flip(sdl_surface);
 
@@ -1509,15 +1367,6 @@ int32_t setpalette(int32_t start, int32_t num)
 
     //return SDL_SetPalette(sdl_surface, SDL_LOGPAL|SDL_PHYSPAL, pal, 0, 256);
 
- 	if (sdl_offscreen_surface)
- 	{
- 		if (!SDL_SetColors(sdl_offscreen_surface, pal, 0, 256))
- 		{
- 			initprintf("Failed to set colors for offscreen surface\n");
- 			return 0;
- 		}
- 	}
-
 	if (sdl_surface)
 	{
 		if (!SDL_SetColors(sdl_surface, pal, 0, 256))
@@ -1528,7 +1377,6 @@ int32_t setpalette(int32_t start, int32_t num)
 	}
 
 	return 1;
-//    return (sdl_offscreen_surface ? SDL_SetColors(sdl_surface, pal, 0, 256)  sdl_surface ? SDL_SetColors(sdl_surface, pal, 0, 256) : 0;
 }
 
 //

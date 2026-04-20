@@ -163,10 +163,6 @@ int32_t g_levelTextTime = 0;
 int32_t r_maxfps = 0;
 uint32_t g_frameDelay = 0;
 
-extern enum ScreenScaleMode_t screenscalemode;
-extern int32_t screencropoffset;
-void calculatescreenextents();
-
 #if defined(RENDERTYPEWIN) && defined(USE_OPENGL)
 extern char forcegl;
 #endif
@@ -233,8 +229,8 @@ inline void G_SetStatusBarScale(int32_t sc)
     G_UpdateScreenArea();
 }
 
-#define SBL (screencropoffset)
-#define SBR (320l - screencropoffset)
+#define SBL (0)
+#define SBR (320l - 0)
 
 static inline int32_t sbarx(int32_t x)
 {
@@ -1658,8 +1654,8 @@ static void G_PrintFPS(void)
         {
             int32_t chars = Bsprintf(tempbuf, "%d ms (%3u fps)", howlong, LastCount);
 
-            printext256(windowx2 - screencropoffset -(chars<<(3-x))+1,windowy1+2,0,-1,tempbuf,x);
-            printext256(windowx2 - screencropoffset -(chars<<(3-x)),windowy1+1,
+            printext256(windowx2 - 0 -(chars<<(3-x))+1,windowy1+2,0,-1,tempbuf,x);
+            printext256(windowx2 - 0 -(chars<<(3-x)),windowy1+1,
                         (LastCount < LOW_FPS) ? COLOR_RED : COLOR_WHITE,-1,tempbuf,x);
 
             // lag meter
@@ -2954,7 +2950,7 @@ void G_DisplayRest(int32_t smoothratio)
             i = 2;
             //        j = scale(2,ud.config.ScreenWidth,320);
         }
-        j = screencropoffset;
+        j = 0;
 
         Bsprintf(tempbuf,"T:^15%d:%02d.%02d",
                  (g_player[myconnectindex].ps->player_par/(REALGAMETICSPERSEC*60)),
@@ -10013,7 +10009,6 @@ CLEAN_DIRECTORY:
 
     OSD_Exec("autoexec.cfg");
 
-	screenscalemode = ud.config.ScreenScaleMode;
     if (setgamemode(ud.config.ScreenMode,ud.config.ScreenWidth,ud.config.ScreenHeight,ud.config.ScreenBPP) < 0)
     {
         int32_t i = 0;
@@ -11101,22 +11096,22 @@ FRAGBONUS:
             if (totalclock > (60*3))
             {
                 yy = zz = 59;
-                gametext(10+screencropoffset,yy+9,"Your Time:",0,2+8+16);
+                gametext(10+0,yy+9,"Your Time:",0,2+8+16);
                 yy+=10;
                 if (!(ud.volume_number == 0 && ud.last_level-1 == 7))
                 {
-                    gametext(10+screencropoffset,yy+9,"Par Time:",0,2+8+16);
+                    gametext(10+0,yy+9,"Par Time:",0,2+8+16);
                     yy+=10;
                     if (!NAM)
                     {
-                        gametext(10+screencropoffset,yy+9,"3D Realms' Time:",0,2+8+16);
+                        gametext(10+0,yy+9,"3D Realms' Time:",0,2+8+16);
                         yy+=10;
                     }
 
                 }
                 if (playerbest > 0)
                 {
-                    gametext(10+screencropoffset,yy+9,g_player[myconnectindex].ps->player_par<playerbest?"Prev Best Time:":"Your Best Time:",0,2+8+16);
+                    gametext(10+0,yy+9,g_player[myconnectindex].ps->player_par<playerbest?"Prev Best Time:":"Your Best Time:",0,2+8+16);
                     yy += 10;
                 }
 
@@ -11137,7 +11132,7 @@ FRAGBONUS:
                              (g_player[myconnectindex].ps->player_par/REALGAMETICSPERSEC)%60,
                              ((g_player[myconnectindex].ps->player_par%REALGAMETICSPERSEC)*33)/10
                             );
-                    gametext((320>>2)+71+screencropoffset,yy+9,tempbuf,0,2+8+16);
+                    gametext((320>>2)+71+0,yy+9,tempbuf,0,2+8+16);
                     /*if (g_player[myconnectindex].ps->player_par < playerbest)
                         gametext((320>>2)+89+(clockpad*24),yy+9,"New record!",0,2+8+16);*/
                     yy+=10;
@@ -11147,7 +11142,7 @@ FRAGBONUS:
                         Bsprintf(tempbuf,"%0*d:%02d",clockpad,
                                  (MapInfo[ud.volume_number*MAXLEVELS+ud.last_level-1].partime/(REALGAMETICSPERSEC*60)),
                                  (MapInfo[ud.volume_number*MAXLEVELS+ud.last_level-1].partime/REALGAMETICSPERSEC)%60);
-                        gametext((320>>2)+71+screencropoffset,yy+9,tempbuf,0,2+8+16);
+                        gametext((320>>2)+71+0,yy+9,tempbuf,0,2+8+16);
                         yy+=10;
 
                         if (!NAM)
@@ -11155,7 +11150,7 @@ FRAGBONUS:
                             Bsprintf(tempbuf,"%0*d:%02d",clockpad,
                                      (MapInfo[ud.volume_number*MAXLEVELS+ud.last_level-1].designertime/(REALGAMETICSPERSEC*60)),
                                      (MapInfo[ud.volume_number*MAXLEVELS+ud.last_level-1].designertime/REALGAMETICSPERSEC)%60);
-                            gametext((320>>2)+71+screencropoffset,yy+9,tempbuf,0,2+8+16);
+                            gametext((320>>2)+71+0,yy+9,tempbuf,0,2+8+16);
                             yy+=10;
                         }
                     }
@@ -11167,7 +11162,7 @@ FRAGBONUS:
                                  (playerbest/REALGAMETICSPERSEC)%60,
                                  ((playerbest%REALGAMETICSPERSEC)*33)/10
                                 );
-                        gametext((320>>2)+71+screencropoffset,yy+9,tempbuf,0,2+8+16);
+                        gametext((320>>2)+71+0,yy+9,tempbuf,0,2+8+16);
                         yy+=10;
                     }
                 }
@@ -11176,9 +11171,9 @@ FRAGBONUS:
             zz = yy += 5;
             if (totalclock > (60*6))
             {
-                gametext(10+screencropoffset,yy+9,"Enemies Killed:",0,2+8+16);
+                gametext(10+0,yy+9,"Enemies Killed:",0,2+8+16);
                 yy += 10;
-                gametext(10+screencropoffset,yy+9,"Enemies Left:",0,2+8+16);
+                gametext(10+0,yy+9,"Enemies Left:",0,2+8+16);
                 yy += 10;
 
                 if (bonuscnt == 2)
@@ -11197,12 +11192,12 @@ FRAGBONUS:
                         S_PlaySound(PIPEBOMB_EXPLODE);
                     }
                     Bsprintf(tempbuf,"%-3d",g_player[myconnectindex].ps->actors_killed);
-                    gametext((320>>2)+70+screencropoffset,yy+9,tempbuf,0,2+8+16);
+                    gametext((320>>2)+70+0,yy+9,tempbuf,0,2+8+16);
                     yy += 10;
                     if (ud.player_skill > 3)
                     {
                         Bsprintf(tempbuf,"N/A");
-                        gametext((320>>2)+70+screencropoffset,yy+9,tempbuf,0,2+8+16);
+                        gametext((320>>2)+70+0,yy+9,tempbuf,0,2+8+16);
                         yy += 10;
                     }
                     else
@@ -11210,7 +11205,7 @@ FRAGBONUS:
                         if ((g_player[myconnectindex].ps->max_actors_killed-g_player[myconnectindex].ps->actors_killed) < 0)
                             Bsprintf(tempbuf,"%-3d",0);
                         else Bsprintf(tempbuf,"%-3d",g_player[myconnectindex].ps->max_actors_killed-g_player[myconnectindex].ps->actors_killed);
-                        gametext((320>>2)+70+screencropoffset,yy+9,tempbuf,0,2+8+16);
+                        gametext((320>>2)+70+0,yy+9,tempbuf,0,2+8+16);
                         yy += 10;
                     }
                 }
@@ -11219,9 +11214,9 @@ FRAGBONUS:
             zz = yy += 5;
             if (totalclock > (60*9))
             {
-                gametext(10+screencropoffset,yy+9,"Secrets Found:",0,2+8+16);
+                gametext(10+0,yy+9,"Secrets Found:",0,2+8+16);
                 yy += 10;
-                gametext(10+screencropoffset,yy+9,"Secrets Missed:",0,2+8+16);
+                gametext(10+0,yy+9,"Secrets Missed:",0,2+8+16);
                 yy += 10;
                 if (bonuscnt == 4) bonuscnt++;
 
@@ -11234,12 +11229,12 @@ FRAGBONUS:
                         S_PlaySound(PIPEBOMB_EXPLODE);
                     }
                     Bsprintf(tempbuf,"%-3d",g_player[myconnectindex].ps->secret_rooms);
-                    gametext((320>>2)+70+screencropoffset,yy+9,tempbuf,0,2+8+16);
+                    gametext((320>>2)+70+0,yy+9,tempbuf,0,2+8+16);
                     yy += 10;
                     if (g_player[myconnectindex].ps->secret_rooms > 0)
                         Bsprintf(tempbuf,"%-3d%%",(100*g_player[myconnectindex].ps->secret_rooms/g_player[myconnectindex].ps->max_secret_rooms));
                     Bsprintf(tempbuf,"%-3d",g_player[myconnectindex].ps->max_secret_rooms-g_player[myconnectindex].ps->secret_rooms);
-                    gametext((320>>2)+70+screencropoffset,yy+9,tempbuf,0,2+8+16);
+                    gametext((320>>2)+70+0,yy+9,tempbuf,0,2+8+16);
                     yy += 10;
                 }
             }
